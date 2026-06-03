@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+
+# Environment variables (file .env asli jangan di-commit)
+.env
+.env.local
+.env.*.local
+
+# Tapi .env.example BOLEH di-commit (sudah berisi nilai publik)
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Supabase local
+supabase/.branches
+supabase/.temp
