@@ -1,0 +1,37 @@
+name: Extract and Setup
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: List files
+        run: ls -la
+
+      - name: Find and extract ZIP
+        run: |
+          find . -name "*.zip" | head -5
+          ZIP=$(find . -name "*.zip" | head -1)
+          if [ -n "$ZIP" ]; then
+            unzip "$ZIP" -d extracted
+            ls extracted/
+            cp -r extracted/*/* . 2>/dev/null || cp -r extracted/* .
+            rm -rf extracted "$ZIP"
+          else
+            echo "No ZIP found"
+            exit 1
+          fi
+
+      - name: Commit files
+        run: |
+          git config user.email "loonarsliving@gmail.com"
+          git config user.name "loonarsliving"
+          git add .
+          git commit -m "feat: extract project files" || echo "nothing to commit"
+          git push
