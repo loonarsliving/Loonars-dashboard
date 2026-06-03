@@ -1,14 +1,21 @@
 import{useState,useEffect}from 'react'
 import{X,Plus,Trash2,Loader2}from 'lucide-react'
 import{supabase}from '../lib/supabase'
-import{ORDER_CHANNELS,formatRupiah}from '../lib/utils'
+import{formatRupiah}from '../lib/utils'
 import toast from 'react-hot-toast'
 
+const CHANNELS=[
+{value:'tokopedia',label:'🟢 Tokopedia'},
+{value:'shopee',label:'🟠 Shopee Reguler'},
+{value:'shopee_instant',label:'⚡ Shopee Instant'},
+{value:'offline',label:'🏪 Offline'},
+{value:'website',label:'🌐 Website'},
+]
 const COURIERS=['J&T Express','JNE','SiCepat','AnterAja','GoSend','GrabExpress','COD','Ambil Sendiri']
 
 export default function AddOrderModal({onClose,onSaved}){
 const[form,setForm]=useState({customer_name:'',customer_phone:'',channel:'offline',courier:'J&T Express',notes:''})
-const[items,setItems]=useState([{product_id:'',product_name:'',qty:1,price:0,subtotal:0}])
+const[items,setItems]=useState([{product_id:'',qty:1,price:0,subtotal:0}])
 const[products,setProducts]=useState([])
 const[saving,setSaving]=useState(false)
 
@@ -21,7 +28,7 @@ const arr=[...items]
 arr[i]={...arr[i],[field]:val}
 if(field==='product_id'){
 const p=products.find(x=>x.id===val)
-if(p){arr[i].product_name=p.name;arr[i].price=p.price;arr[i].subtotal=p.price*arr[i].qty}
+if(p){arr[i].price=p.price;arr[i].subtotal=p.price*arr[i].qty}
 }
 if(field==='qty'){arr[i].subtotal=arr[i].price*Number(val)}
 setItems(arr)
@@ -40,8 +47,8 @@ const{data:existing}=await supabase.from('customers').select('id').eq('phone',fo
 if(existing){
 customerId=existing.id
 }else{
-const{data:newCust,error:custErr}=await supabase.from('customers').insert({name:form.customer_name,phone:form.customer_phone}).select('id').single()
-if(custErr)throw custErr
+const{data:newCust,error:e}=await supabase.from('customers').insert({name:form.customer_name,phone:form.customer_phone}).select('id').single()
+if(e)throw e
 customerId=newCust.id
 }
 const{data:order,error:orderErr}=await supabase.from('orders').insert({
@@ -50,12 +57,13 @@ channel:form.channel,
 notes:form.courier+(form.notes?' - '+form.notes:''),
 total,
 status:'pending'
-}).select('id,order_number').single()
+}).select('id').single()
 if(orderErr)throw orderErr
-const orderItems=items.map(i=>({order_id:order.id,product_id:i.product_id,qty:i.qty,price:i.price,subtotal:i.subtotal}))
-const{error:itemErr}=await supabase.from('order_items').insert(orderItems)
+const{error:itemErr}=await supabase.from('order_items').insert(items.map(i=>({order_id:order.id,product_id:i.product_id,qty:i.qty,price:i.price,subtotal:i.subtotal})))
 if(itemErr)throw itemErr
-toast.success('Pesanan '+order.order_number+' berhasil disimpan!')
+// Ambil nomor order setelah trigger selesai
+const{data:orderData}=await supabase.from('orders').select('order_number').eq('id',order.id).single()
+toast.success('✅ Pesanan '+(orderData?.order_number||'baru')+' berhasil disimpan!')
 onSaved()
 }catch(e){
 toast.error(e.message||'Gagal menyimpan')
@@ -84,7 +92,7 @@ return(
 <div>
 <label className="label">Channel</label>
 <select className="input" value={form.channel} onChange={e=>setForm(f=>({...f,channel:e.target.value}))}>
-{Object.entries(ORDER_CHANNELS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
+{CHANNELS.map(c=><option key={c.value} value={c.value}>{c.label}</option>)}
 </select>
 </div>
 <div>
@@ -97,7 +105,7 @@ return(
 <div>
 <div className="flex items-center justify-between mb-2">
 <label className="label mb-0">Produk</label>
-<button onClick={()=>setItems([...items,{product_id:'',product_name:'',qty:1,price:0,subtotal:0}])} className="text-xs text-primary font-medium flex items-center gap-1"><Plus size={12}/>Tambah</button>
+<button onClick={()=>setItems([...items,{product_id:'',qty:1,price:0,subtotal:0}])} className="text-xs text-primary font-medium flex items-center gap-1"><Plus size={12}/>Tambah</button>
 </div>
 {items.map((item,i)=>(
 <div key={i} className="flex gap-2 mb-2 items-center">
@@ -107,7 +115,7 @@ return(
 </select>
 <input type="number" className="input w-16 text-sm" min="1" value={item.qty} onChange={e=>updateItem(i,'qty',e.target.value)}/>
 <span className="text-xs text-gray-500 w-24 text-right shrink-0">{formatRupiah(item.subtotal)}</span>
-{items.length>1&&<button onClick={()=>setItems(items.filter((_,j)=>j!==i))} className="text-red-400 shrink-0"><Trash2 size={14}/></button>}
+{items.length>1&&<button onClick={()=>setItems(items.filter((_,j)=>j!==i))} className="text-red-400"><Trash2 size={14}/></button>}
 </div>
 ))}
 </div>
