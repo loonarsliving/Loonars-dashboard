@@ -1,0 +1,22 @@
+name: Add Telegram Notif
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Patch AddOrderModal
+        run: |
+          sed -i "s|onSaved()|fetch('https://gluoioiimapyhchdasfl.supabase.co/functions/v1/notify-telegram',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({order_number:orderNumber,customer_name:form.customer_name,channel:form.channel,total:total,items:items.map(i=>({name:i.product_name,qty:i.qty,subtotal:i.subtotal}))})}).catch(()=>{}); onSaved()|g" src/components/AddOrderModal.jsx
+      - name: Commit
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+          git add src/components/AddOrderModal.jsx
+          git diff --staged --quiet || git commit -m "feat: telegram notification on new order"
+          git push
