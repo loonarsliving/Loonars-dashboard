@@ -1,0 +1,124 @@
+name: Update Admin Orders
+on: push
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Write Admin Orders
+        run: |
+          mkdir -p src/pages/admin
+          cat > src/pages/admin/Orders.jsx << 'ENDOFFILE'
+import { useState, useEffect } from 'react'
+import { Plus, Search, Loader2, CheckCircle, XCircle, Truck, Package, Clock } from 'lucide-react'
+import { supabase } from '../../lib/supabase'
+import { formatRupiah, formatDate, ORDER_STATUS, ORDER_CHANNELS } from '../../lib/utils'
+import AddOrderModal from '../../components/AddOrderModal'
+import toast from 'react-hot-toast'
+
+const STATUS_ICON = {
+  pending: <Clock size={13} />,
+  processing: <Package size={13} />,
+  packing: <Package size={13} />,
+  shipped: <Truck size={13} />,
+  done: <CheckCircle size={13} />,
+  cancelled: <XCircle size={13} />,
+}
+
+export default function AdminOrders() {
+  const [orders, setOrders] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [filterStatus, setFilterStatus] = useState('')
+  const [showAdd, setShowAdd] = useState(false)
+  const [updating, setUpdating] = useState(null)
+
+  async function load() {
+    setLoading(true)
+    let q = supabase.from('v_order_summary').select('*').order('created_at', { ascending: false })
+    if (filterStatus) q = q.eq('status', filterStatus)
+    if (search) q = q.or(`order_number.ilike.%${search}%,customer_name.ilike.%${search}%`)
+    const { data } = await q
+    setOrders(data || [])
+    setLoading(false)
+  }
+
+  useEffect(() => { load() }, [filterStatus, search])
+
+  async function updateStatus(orderId, newStatus) {
+    setUpdating(orderId)
+    const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId)
+    if (error) toast.error('Gagal update status')
+    else { toast.success('Status diperbarui'); load() }
+    setUpdating(null)
+  }
+
+  const nextStatus = { pending: 'processing', processing: 'packing', packing: 'shipped', shipped: 'done' }
+  const nextLabel = { pending: 'Proses', processing: 'Packing', packing: 'Kirim', shipped: 'Selesai' }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Pesanan</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Kelola semua pesanan</p>
+        </div>
+        <button onClick={() => setShowAdd(true)} className="btn-primary">
+          <Plus size={16} /> Tambah Offline
+        </button>
+      </div>
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input className="input pl-8 py-2 text-sm" placeholder="Cari pesanan..." value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        <select className="input py-2 text-sm w-auto" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+          <option value="">Semua Status</option>
+          {Object.entries(ORDER_STATUS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+        </select>
+      </div>
+      <div className="card divide-y divide-gray-50">
+        {loading ? (
+          <div className="py-12 text-center text-gray-400">Memuat...</div>
+        ) : orders.length === 0 ? (
+          <div className="py-12 text-center text-gray-400">Belum ada pesanan</div>
+        ) : orders.map(o => {
+          const st = ORDER_STATUS[o.status] || {}
+          const ch = ORDER_CHANNELS[o.channel] || {}
+          return (
+            <div key={o.id} className="px-4 py-3 flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-mono text-xs font-bold text-gray-700">{o.order_number}</span>
+                  <span className={`badge text-xs ${st.color}`}>{STATUS_ICON[o.status]} {st.label}</span>
+                  <span className={`badge text-xs ${ch.color}`}>{ch.label}</span>
+                </div>
+                <p className="text-sm font-medium text-gray-800 mt-0.5 truncate">{o.customer_name}</p>
+                <p className="text-xs text-gray-500">{formatDate(o.created_at)} · {formatRupiah(o.total)}</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {nextStatus[o.status] && (
+                  <button onClick={() => updateStatus(o.id, nextStatus[o.status])} disabled={updating === o.id} className="btn-primary text-xs py-1.5 px-3">
+                    {updating === o.id ? <Loader2 size={12} className="animate-spin" /> : nextLabel[o.status]}
+                  </button>
+                )}
+                {o.status !== 'done' && o.status !== 'cancelled' && (
+                  <button onClick={() => updateStatus(o.id, 'cancelled')} disabled={updating === o.id} className="btn-secondary text-xs py-1.5 px-3 text-red-500">Batal</button>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      {showAdd && <AddOrderModal onClose={() => setShowAdd(false)} onSaved={() => { setShowAdd(false); load() }} />}
+    </div>
+  )
+}
+ENDOFFILE
+      - name: Commit
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+          git add src/pages/admin/Orders.jsx
+          git diff --staged --quiet || git commit -m "feat: admin can add offline orders"
+          git push
