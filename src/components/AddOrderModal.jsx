@@ -44,30 +44,31 @@ setSaving(true)
 try{
 let customerId
 const{data:existing}=await supabase.from('customers').select('id').eq('phone',form.customer_phone).maybeSingle()
-if(existing){
-customerId=existing.id
-}else{
-const{data:newCust,error:e}=await supabase.from('customers').insert({name:form.customer_name,phone:form.customer_phone}).select('id').single()
+if(existing){customerId=existing.id}
+else{
+const{data:c,error:e}=await supabase.from('customers').insert({name:form.customer_name,phone:form.customer_phone}).select('id').single()
 if(e)throw e
-customerId=newCust.id
+customerId=c.id
 }
-const{data:order,error:orderErr}=await supabase.from('orders').insert({
+const{data:order,error:oErr}=await supabase.from('orders').insert({
 customer_id:customerId,
+customer_name:form.customer_name,
+customer_phone:form.customer_phone,
+courier:form.courier,
 channel:form.channel,
-notes:form.courier+(form.notes?' - '+form.notes:''),
-total,
+notes:form.notes,
+total:total,
+subtotal:total,
 status:'pending'
 }).select('id').single()
-if(orderErr)throw orderErr
-const{error:itemErr}=await supabase.from('order_items').insert(items.map(i=>({order_id:order.id,product_id:i.product_id,qty:i.qty,price:i.price,subtotal:i.subtotal})))
-if(itemErr)throw itemErr
-// Ambil nomor order setelah trigger selesai
-const{data:orderData}=await supabase.from('orders').select('order_number').eq('id',order.id).single()
-toast.success('✅ Pesanan '+(orderData?.order_number||'baru')+' berhasil disimpan!')
+if(oErr)throw oErr
+const{error:iErr}=await supabase.from('order_items').insert(items.map(i=>({order_id:order.id,product_id:i.product_id,qty:i.qty,price:i.price,subtotal:i.subtotal})))
+if(iErr)throw iErr
+const{data:od}=await supabase.from('orders').select('order_number').eq('id',order.id).single()
+toast.success('Pesanan '+(od?.order_number||'baru')+' berhasil!')
 onSaved()
-}catch(e){
-toast.error(e.message||'Gagal menyimpan')
-}finally{setSaving(false)}
+}catch(e){toast.error(e.message||'Gagal')}
+finally{setSaving(false)}
 }
 
 return(
@@ -79,28 +80,20 @@ return(
 </div>
 <div className="p-5 space-y-4">
 <div className="grid grid-cols-2 gap-3">
-<div>
-<label className="label">Nama Pembeli</label>
-<input className="input" placeholder="Nama lengkap" value={form.customer_name} onChange={e=>setForm(f=>({...f,customer_name:e.target.value}))}/>
-</div>
-<div>
-<label className="label">No HP</label>
-<input className="input" placeholder="08xxxxxxxxxx" value={form.customer_phone} onChange={e=>setForm(f=>({...f,customer_phone:e.target.value}))}/>
-</div>
+<div><label className="label">Nama Pembeli</label>
+<input className="input" placeholder="Nama lengkap" value={form.customer_name} onChange={e=>setForm(f=>({...f,customer_name:e.target.value}))}/></div>
+<div><label className="label">No HP</label>
+<input className="input" placeholder="08xxxxxxxxxx" value={form.customer_phone} onChange={e=>setForm(f=>({...f,customer_phone:e.target.value}))}/></div>
 </div>
 <div className="grid grid-cols-2 gap-3">
-<div>
-<label className="label">Channel</label>
+<div><label className="label">Channel</label>
 <select className="input" value={form.channel} onChange={e=>setForm(f=>({...f,channel:e.target.value}))}>
 {CHANNELS.map(c=><option key={c.value} value={c.value}>{c.label}</option>)}
-</select>
-</div>
-<div>
-<label className="label">Kurir</label>
+</select></div>
+<div><label className="label">Kurir</label>
 <select className="input" value={form.courier} onChange={e=>setForm(f=>({...f,courier:e.target.value}))}>
 {COURIERS.map(c=><option key={c} value={c}>{c}</option>)}
-</select>
-</div>
+</select></div>
 </div>
 <div>
 <div className="flex items-center justify-between mb-2">
@@ -119,10 +112,8 @@ return(
 </div>
 ))}
 </div>
-<div>
-<label className="label">Catatan (opsional)</label>
-<textarea className="input" rows={2} value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))}/>
-</div>
+<div><label className="label">Catatan (opsional)</label>
+<textarea className="input" rows={2} value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))}/></div>
 <div className="bg-primary/5 rounded-xl p-3 flex justify-between items-center">
 <span className="text-sm text-gray-600 font-medium">Total Pembayaran</span>
 <span className="font-bold text-primary text-lg">{formatRupiah(total)}</span>
