@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Plus, User, Loader2, Shield, ShieldOff, Trash2 } from 'lucide-react'
-import { supabase } from '../../lib/supabase'
-import { formatDate } from '../../lib/utils'
-import { useAuth } from '../../contexts/AuthContext'
+import { Plus, Loader2, Shield, ShieldOff } from 'lucide-react'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
 
 function InviteModal({ onClose, onSaved }) {
@@ -14,15 +13,21 @@ function InviteModal({ onClose, onSaved }) {
     if (form.password.length < 8) return toast.error('Password minimal 8 karakter')
     setSaving(true)
     try {
-      // Gunakan signUp untuk membuat user baru
-      const { data, error } = await supabase.auth.admin ? 
-        await supabase.auth.signUp({ email: form.email, password: form.password, options: { data: { full_name: form.full_name, role: form.role } } }) :
-        await supabase.auth.signUp({ email: form.email, password: form.password, options: { data: { full_name: form.full_name, role: form.role } } })
-      if (error) throw error
-      toast.success(`Akun ${form.full_name} berhasil dibuat! Minta mereka cek email untuk konfirmasi.`)
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify(form)
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || 'Gagal membuat akun')
+      toast.success(`Akun ${form.full_name} berhasil dibuat!`)
       onSaved()
     } catch (e) {
-      toast.error('Gagal membuat akun: ' + e.message)
+      toast.error(e.message)
     } finally {
       setSaving(false)
     }
@@ -45,7 +50,7 @@ function InviteModal({ onClose, onSaved }) {
             <input type="email" className="input" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
           </div>
           <div>
-            <label className="label">Password Sementara</label>
+            <label className="label">Password</label>
             <input type="password" className="input" placeholder="Min. 8 karakter" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} />
           </div>
           <div>
@@ -54,9 +59,6 @@ function InviteModal({ onClose, onSaved }) {
               <option value="admin">Admin / Tim Operasional</option>
               <option value="owner">Owner (akses penuh)</option>
             </select>
-          </div>
-          <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs text-blue-700">
-            💡 Tim admin hanya bisa mengakses dashboard operasional (pesanan, produk, pelanggan). Owner bisa akses semua termasuk laporan dan pengaturan.
           </div>
         </div>
         <div className="flex justify-end gap-3 p-5 border-t border-gray-100">
@@ -103,23 +105,19 @@ export default function OwnerUsers() {
           <Plus size={16} /> Tambah Anggota
         </button>
       </div>
-
       <div className="card">
         <div className="divide-y divide-gray-50">
           {loading ? (
             <div className="py-10 text-center text-gray-400">Memuat...</div>
-          ) : users.length === 0 ? (
-            <div className="py-10 text-center text-gray-400">Belum ada anggota tim</div>
           ) : users.map(u => (
             <div key={u.id} className="px-5 py-4 flex items-center gap-4">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm
-                ${u.role === 'owner' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500'}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${u.role === 'owner' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-500'}`}>
                 {u.full_name?.[0]?.toUpperCase() || '?'}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="font-semibold text-gray-900 text-sm">{u.full_name}</p>
-                  {u.id === currentUser?.id && <span className="text-xs text-primary font-medium">(kamu)</span>}
+                  {u.id === currentUser?.id && <span className="text-xs text-primary">(kamu)</span>}
                 </div>
                 <p className="text-xs text-gray-500">{u.email}</p>
               </div>
@@ -131,9 +129,7 @@ export default function OwnerUsers() {
                   {u.is_active ? 'Aktif' : 'Nonaktif'}
                 </span>
                 {u.id !== currentUser?.id && (
-                  <button onClick={() => toggleActive(u)}
-                    className="btn-ghost btn-sm text-gray-400"
-                    title={u.is_active ? 'Nonaktifkan' : 'Aktifkan'}>
+                  <button onClick={() => toggleActive(u)} className="btn-ghost btn-sm text-gray-400">
                     {u.is_active ? <ShieldOff size={14} /> : <Shield size={14} />}
                   </button>
                 )}
@@ -142,17 +138,6 @@ export default function OwnerUsers() {
           ))}
         </div>
       </div>
-
-      <div className="card p-4 bg-yellow-50 border-yellow-100">
-        <p className="text-sm text-yellow-800 font-medium">Catatan Penting:</p>
-        <ul className="text-sm text-yellow-700 mt-1 space-y-1 list-disc list-inside">
-          <li>Anggota baru perlu konfirmasi email sebelum bisa login</li>
-          <li>Owner memiliki akses penuh ke semua fitur</li>
-          <li>Admin hanya dapat mengakses manajemen pesanan, produk, dan pelanggan</li>
-          <li>Untuk hapus akun permanen, lakukan via Supabase Dashboard</li>
-        </ul>
-      </div>
-
       {showAdd && <InviteModal onClose={() => setShowAdd(false)} onSaved={() => { setShowAdd(false); load() }} />}
     </div>
   )
