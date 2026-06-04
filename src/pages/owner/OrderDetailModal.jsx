@@ -118,4 +118,4 @@ className="text-xs px-3 py-1.5 rounded-lg border border-blue-200 bg-white hover:
 <button onClick={onClose} className="btn-secondary text-sm">Tutup</button>
 </div></div>
 {showPrint&&<PrintReceipt order={order} items={items} onClose={()=>setShowPrint(false)} onStatusUpdated={()=>{load();if(onUpdated)onUpdated()}}/>}
-</div>)}}
+</div>)}
