@@ -1,5 +1,5 @@
 import{useState,useEffect}from 'react'
-import{X,Printer,Package,CheckCircle,XCircle,Truck,Clock,Tag}from 'lucide-react'
+import{X,Printer,Tag}from 'lucide-react'
 import{supabase}from '../../lib/supabase'
 import{formatRupiah,formatDate,ORDER_STATUS,ORDER_CHANNELS}from '../../lib/utils'
 import PrintReceipt from '../../components/PrintReceipt'
@@ -20,9 +20,7 @@ async function load(){
 setLoading(true)
 const{data:o}=await supabase.from('orders').select('*').eq('id',orderId).single()
 const{data:i}=await supabase.from('order_items').select('*').eq('order_id',orderId)
-setOrder(o)
-setItems(i||[])
-setSampleNotes(o?.sample_notes||'')
+setOrder(o);setItems(i||[]);setSampleNotes(o?.sample_notes||'')
 setLoading(false)
 }
 
@@ -30,9 +28,7 @@ async function updateStatus(status){
 setSaving(true)
 await supabase.from('orders').update({status}).eq('id',orderId)
 toast.success('Status diperbarui')
-load()
-if(onUpdated)onUpdated()
-setSaving(false)
+load();if(onUpdated)onUpdated();setSaving(false)
 }
 
 async function toggleSample(){
@@ -44,25 +40,17 @@ toast.success('Ditandai sebagai penjualan biasa')
 await supabase.from('orders').update({is_sample:true,sample_notes:sampleNotes}).eq('id',orderId)
 toast.success('Ditandai sebagai Sample')
 }
-setShowSample(false)
-load()
-if(onUpdated)onUpdated()
-setSaving(false)
+setShowSample(false);load();if(onUpdated)onUpdated();setSaving(false)
 }
 
-if(loading)return(
-<div className="modal-overlay"><div className="modal p-10 text-center text-gray-400">Memuat...</div></div>
-)
+if(loading)return(<div className="modal-overlay"><div className="modal p-10 text-center text-gray-400">Memuat...</div></div>)
 
 const st=ORDER_STATUS[order?.status]||{}
 const ch=ORDER_CHANNELS[order?.channel]||{}
 const STATUSES=['pending','processing','packing','shipped','done','cancelled']
-
 return(
 <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
 <div className="modal w-full max-w-lg max-h-[90vh] overflow-y-auto">
-
-{/* Header */}
 <div className="flex items-center justify-between p-5 border-b border-gray-100">
 <div>
 <div className="flex items-center gap-2 flex-wrap">
@@ -78,83 +66,56 @@ return(
 <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100"><X size={16}/></button>
 </div>
 </div>
-
-{/* Info */}
 <div className="p-5 space-y-4">
 <div className="grid grid-cols-2 gap-4">
-<div>
-<p className="text-xs text-gray-400 uppercase font-medium mb-1">Pelanggan</p>
-<p className="font-semibold text-gray-900">{order?.customer_name}</p>
-<p className="text-sm text-gray-500">{order?.customer_phone}</p>
+<div><p className="text-xs text-gray-400 uppercase font-medium mb-1">Pelanggan</p>
+<p className="font-semibold">{order?.customer_name}</p>
+<p className="text-sm text-gray-500">{order?.customer_phone}</p></div>
+<div><p className="text-xs text-gray-400 uppercase font-medium mb-1">Alamat Kirim</p>
+<p className="text-sm text-gray-700 leading-relaxed">{order?.shipping_address||order?.notes||'-'}</p></div>
 </div>
-<div>
-<p className="text-xs text-gray-400 uppercase font-medium mb-1">Alamat Kirim</p>
-<p className="text-sm text-gray-700 leading-relaxed">{order?.shipping_address||order?.notes||'-'}</p>
-</div>
-</div>
-
-{/* Produk */}
-<div>
-<p className="text-xs text-gray-400 uppercase font-medium mb-2">Produk</p>
+<div><p className="text-xs text-gray-400 uppercase font-medium mb-2">Produk</p>
 <div className="bg-gray-50 rounded-xl divide-y divide-gray-100">
 {items.map((item,i)=>(
-<div key={i} className="px-4 py-3 flex justify-between items-center">
-<div>
-<p className="font-medium text-sm text-gray-900">{item.product_name||'Produk'}</p>
-<p className="text-xs text-gray-400">{item.product_sku}</p>
-</div>
-<div className="text-right">
-<p className="text-sm">{item.quantity||item.qty} x {formatRupiah(item.unit_price||item.price)}</p>
-<p className="font-bold text-sm">{formatRupiah(item.subtotal)}</p>
-</div>
-</div>
-))}
-<div className="px-4 py-3 flex justify-between">
-<span className="text-sm text-gray-500">Ongkir</span>
-<span className="text-sm">{formatRupiah(order?.shipping_cost||0)}</span>
-</div>
+<div key={i} className="px-4 py-3 flex justify-between">
+<div><p className="font-medium text-sm">{item.product_name||'Produk'}</p>
+<p className="text-xs text-gray-400">{item.product_sku}</p></div>
+<div className="text-right"><p className="text-sm">{item.quantity||item.qty} x {formatRupiah(item.unit_price||item.price)}</p>
+<p className="font-bold text-sm">{formatRupiah(item.subtotal)}</p></div>
+</div>))}
 <div className="px-4 py-3 flex justify-between font-bold">
-<span>Total</span>
-<span className="text-primary">{formatRupiah(order?.total)}</span>
-</div>
-</div>
-</div>
-
-{/* Kurir */}
-{order?.courier&&(
-<div className="flex gap-4">
-<div className="flex-1">
-<p className="text-xs text-gray-400 uppercase font-medium mb-1">Kurir</p>
-<p className="text-sm font-medium">{order.courier}</p>
-</div>
-{order?.tracking_number&&(
-<div className="flex-1">
-<p className="text-xs text-gray-400 uppercase font-medium mb-1">No. Resi</p>
-<p className="text-sm font-medium font-mono">{order.tracking_number}</p>
-</div>
-)}
-</div>
-)}
-
-{/* Sample Notes */}
-{order?.is_sample&&order?.sample_notes&&(
-<div className="bg-purple-50 border border-purple-100 rounded-xl p-3">
-<p className="text-xs font-bold text-purple-700 mb-1">🎁 Catatan Sample:</p>
-<p className="text-sm text-purple-800">{order.sample_notes}</p>
-</div>
-)}
-
-{/* Update Status */}
+<span>Total</span><span className="text-primary">{formatRupiah(order?.total)}</span>
+</div></div></div>
+{order?.courier&&<div className="flex gap-4">
+<div><p className="text-xs text-gray-400 uppercase font-medium mb-1">Kurir</p>
+<p className="text-sm font-medium">{order.courier}</p></div>
+{order?.tracking_number&&<div><p className="text-xs text-gray-400 uppercase font-medium mb-1">No. Resi</p>
+<p className="text-sm font-mono">{order.tracking_number}</p></div>}
+</div>}
+{order?.is_sample&&order?.sample_notes&&<div className="bg-purple-50 border border-purple-100 rounded-xl p-3">
+<p className="text-xs font-bold text-purple-700 mb-1">Catatan Sample:</p>
+<p className="text-sm text-purple-800">{order.sample_notes}</p></div>}
 <div className="bg-blue-50 rounded-xl p-4">
-<p className="text-xs font-bold text-blue-700 uppercase mb-3">Update Status</p>
+<p className="text-xs font-bold text-blue-700 uppercase mb-3">Update Status Manual</p>
 <div className="flex flex-wrap gap-2">
 {STATUSES.filter(s=>s!==order?.status).map(s=>(
 <button key={s} onClick={()=>updateStatus(s)} disabled={saving}
 className="text-xs px-3 py-1.5 rounded-lg border border-blue-200 bg-white hover:bg-blue-50 text-blue-700">
-{ORDER_STATUS[s]?.label||s}
-</button>
-))}
-</div>
-</div>
-
-{/* Tombol Sample */}
+{ORDER_STATUS[s]?.label||s}</button>))}
+</div></div>
+<div className={`rounded-xl p-4 ${order?.is_sample?'bg-purple-50 border border-purple-100':'bg-gray-50'}`}>
+<div className="flex items-center justify-between">
+<div><p className="text-sm font-bold">{order?.is_sample?'🎁 Order ini Sample':'Tandai sebagai Sample?'}</p>
+<p className="text-xs text-gray-500 mt-0.5">Sample tidak dihitung dalam laporan keuntungan</p></div>
+<button onClick={()=>setShowSample(!showSample)} className={`text-xs px-3 py-1.5 rounded-lg ${order?.is_sample?'bg-purple-600 text-white':'bg-gray-200 text-gray-700'}`}>
+{order?.is_sample?'Hapus Sample':'Tandai Sample'}</button></div>
+{showSample&&!order?.is_sample&&<div className="mt-3">
+<textarea className="input text-sm w-full" rows={2} placeholder="Catatan (misal: untuk influencer @nama)" value={sampleNotes} onChange={e=>setSampleNotes(e.target.value)}/>
+<button onClick={toggleSample} disabled={saving} className="btn-primary w-full mt-2 text-sm"><Tag size={14}/> Simpan Sample</button></div>}
+{order?.is_sample&&<button onClick={toggleSample} disabled={saving} className="btn-secondary w-full mt-2 text-sm text-red-500">Hapus Status Sample</button>}
+</div></div>
+<div className="flex justify-end gap-2 p-5 border-t border-gray-100">
+<button onClick={onClose} className="btn-secondary text-sm">Tutup</button>
+</div></div>
+{showPrint&&<PrintReceipt order={order} items={items} onClose={()=>setShowPrint(false)} onStatusUpdated={()=>{load();if(onUpdated)onUpdated()}}/>}
+</div>)}}
