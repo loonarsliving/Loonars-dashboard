@@ -1,3 +1,4 @@
+import{createPortal}from 'react-dom'
 import{formatDate}from '../lib/utils'
 import{supabase}from '../lib/supabase'
 import toast from 'react-hot-toast'
@@ -13,23 +14,22 @@ async function handlePrint(){
 if(order?.id&&NEXT[order?.status]){
 const{error}=await supabase.from('orders').update({status:NEXT[order.status]}).eq('id',order.id)
 if(!error){
-toast.success('Status diupdate: '+LABEL[order.status])
+toast.success('Status: '+LABEL[order.status])
 if(onStatusUpdated)onStatusUpdated(NEXT[order.status])
-}
-}
+}}
 window.print()
 }
 
-return(
+const modal=(
 <>
 <style>{`@page{size:70mm 100mm;margin:0}@media print{body *{visibility:hidden}#resi,#resi *{visibility:visible}#resi{position:fixed;top:0;left:0;width:70mm;height:100mm;padding:3mm;font-family:Arial,sans-serif;font-size:8pt;background:white}}`}</style>
-<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.5)',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center'}}>
-<div style={{background:'white',borderRadius:16,width:'100%',maxWidth:320,margin:'0 16px'}}>
-<div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'16px',borderBottom:'1px solid #f3f4f6'}}>
+<div onClick={e=>{if(e.target===e.currentTarget)onClose()}} style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.6)',zIndex:99999,display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'all'}}>
+<div onClick={e=>e.stopPropagation()} style={{background:'white',borderRadius:16,width:'calc(100% - 32px)',maxWidth:320,pointerEvents:'all'}}>
+<div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:16,borderBottom:'1px solid #f3f4f6'}}>
 <span style={{fontWeight:'bold',fontSize:14}}>Preview Label Resi</span>
-<button onClick={onClose} style={{padding:'8px',borderRadius:8,border:'none',background:'#f3f4f6',cursor:'pointer',fontSize:16}}>✕</button>
+<button onClick={onClose} style={{width:32,height:32,borderRadius:8,border:'none',background:'#f3f4f6',cursor:'pointer',fontSize:16,display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'all'}}>✕</button>
 </div>
-<div id="resi" style={{margin:'12px',padding:'8px',border:'1px solid black',fontFamily:'Arial,sans-serif',fontSize:'8pt',minHeight:'100mm',width:'70mm'}}>
+<div id="resi" style={{margin:12,padding:8,border:'1px solid black',fontFamily:'Arial,sans-serif',fontSize:'8pt',minHeight:'100mm',width:'70mm',background:'white'}}>
 <div style={{borderBottom:'2px solid black',paddingBottom:6,marginBottom:6}}>
 <p style={{fontWeight:'bold',fontSize:12,margin:0}}>LOONARS SKINCARE</p>
 <p style={{margin:0,fontSize:9}}>loonarsbeauty.haluoleo.id</p>
@@ -62,11 +62,14 @@ return(
 <div style={{background:'#eff6ff',margin:'0 12px 12px',padding:8,borderRadius:8,fontSize:11,color:'#1d4ed8'}}>
 💡 Tap "Simpan PDF" → cubit preview ke atas → Save to Files → buka di Printer Label
 </div>
-<div style={{display:'flex',justifyContent:'flex-end',gap:8,padding:16,borderTop:'1px solid #f3f4f6'}}>
-<button onClick={onClose} style={{padding:'8px 16px',borderRadius:8,border:'1px solid #e5e7eb',background:'white',cursor:'pointer'}}>Tutup</button>
-<button onClick={handlePrint} style={{padding:'8px 16px',borderRadius:8,border:'none',background:'#d4296c',color:'white',cursor:'pointer',fontWeight:'bold'}}>📄 Simpan PDF</button>
+<div style={{display:'flex',justifyContent:'flex-end',gap:8,padding:16,borderTop:'1px solid #f3f4f6',pointerEvents:'all'}}>
+<button onClick={onClose} style={{padding:'8px 16px',borderRadius:8,border:'1px solid #e5e7eb',background:'white',cursor:'pointer',pointerEvents:'all'}}>Tutup</button>
+<button onClick={handlePrint} style={{padding:'8px 16px',borderRadius:8,border:'none',background:'#d4296c',color:'white',cursor:'pointer',fontWeight:'bold',pointerEvents:'all'}}>📄 Simpan PDF</button>
 </div>
 </div>
 </div>
 </>
-)}
+)
+
+return createPortal(modal,document.body)
+}
