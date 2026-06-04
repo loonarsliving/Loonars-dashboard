@@ -2,24 +2,22 @@ import{formatDate}from '../lib/utils'
 
 export function triggerPrint(){window.print()}
 
-export function savePDF(){
-const opt={
-margin:0,
-filename:'resi-loonars.pdf',
-image:{type:'jpeg',quality:0.98},
-html2canvas:{scale:3},
-jsPDF:{unit:'mm',format:[70,100],orientation:'portrait'}
-}
-import('https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js').then(m=>{
-const html2pdf=m.default||m
-html2pdf().set(opt).from(document.getElementById('resi')).save()
-})
+export default function PrintReceipt({order,items,onClose}){
+
+function handleSavePDF(){
+window.print()
 }
 
-export default function PrintReceipt({order,items,onClose}){
 return(
 <>
-<style>{`@page{size:70mm 100mm;margin:0}@media print{body *{visibility:hidden}#resi,#resi *{visibility:visible}#resi{position:fixed;top:0;left:0;width:70mm;height:100mm;padding:3mm;font-family:Arial,sans-serif;font-size:8pt;overflow:hidden}.no-print{display:none!important}}`}</style>
+<style>{`
+@page{size:70mm 100mm;margin:0}
+@media print{
+body *{visibility:hidden}
+#resi,#resi *{visibility:visible}
+#resi{position:fixed;top:0;left:0;width:70mm;height:100mm;padding:3mm;font-family:Arial,sans-serif;font-size:8pt;background:white}
+.no-print{display:none!important}}
+`}</style>
 <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
 <div className="modal w-full max-w-xs">
 <div className="flex items-center justify-between p-4 border-b border-gray-100">
@@ -60,10 +58,12 @@ return(
 <p>Terima kasih! 🌿</p>
 </div>
 </div>
-<div className="flex justify-end gap-2 p-4 border-t border-gray-100 no-print flex-wrap">
+<div className="bg-blue-50 mx-4 p-2 rounded-lg text-xs text-blue-700 no-print">
+💡 Tap "Simpan PDF" → di dialog print, cubit/zoom out preview → otomatis jadi PDF → simpan ke Files → buka di Printer Label
+</div>
+<div className="flex justify-end gap-2 p-4 border-t border-gray-100 no-print">
 <button onClick={onClose} className="btn-secondary text-sm">Tutup</button>
-<button onClick={savePDF} className="btn-secondary text-sm">📄 Simpan PDF</button>
-<button onClick={triggerPrint} className="btn-primary text-sm">🖨️ Print</button>
+<button onClick={handleSavePDF} className="btn-primary text-sm">📄 Simpan PDF</button>
 </div>
 </div>
 </div>
