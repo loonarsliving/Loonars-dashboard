@@ -1,75 +1,92 @@
-import { formatDate, formatRupiah } from '../lib/utils'
+import { formatRupiah, formatDate } from '../lib/utils'
 
-export function triggerPrint() {
-  window.print()
-}
+export default function PrintReceipt({ order, items, onClose }) {
+  function handlePrint() {
+    window.print()
+  }
 
-export default function PrintReceipt({ order, items }) {
-  if (!order) return null
   return (
-    <div id="print-area" className="hidden">
-      <div style={{ width: '80mm', fontFamily: 'monospace', fontSize: '11px', padding: '4mm' }}>
-        <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <div style={{ fontSize: '14px', fontWeight: 'bold' }}>LOONARS SKINCARE</div>
-          <div style={{ fontSize: '10px' }}>Skincare Premium Indonesia</div>
-          <div style={{ borderTop: '1px dashed #000', margin: '6px 0' }} />
-        </div>
+    <>
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          #receipt, #receipt * { visibility: visible; }
+          #receipt {
+            position: fixed;
+            top: 0; left: 0;
+            width: 70mm;
+            min-height: 100mm;
+            padding: 4mm;
+            font-size: 9pt;
+            font-family: monospace;
+          }
+          .no-print { display: none !important; }
+        }
+      `}</style>
 
-        <div style={{ marginBottom: '8px' }}>
-          <div><strong>No. Order:</strong> {order.order_number}</div>
-          <div><strong>Tanggal:</strong> {formatDate(order.created_at, 'dd/MM/yyyy HH:mm')}</div>
-          <div><strong>Channel:</strong> {order.channel?.toUpperCase()}</div>
-          {order.tracking_number && <div><strong>Resi:</strong> {order.tracking_number}</div>}
-        </div>
+      <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+        <div className="modal w-full max-w-xs">
+          <div className="flex items-center justify-between p-4 border-b border-gray-100">
+            <h2 className="font-bold text-gray-900 text-sm">Preview Resi</h2>
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 no-print">✕</button>
+          </div>
 
-        <div style={{ borderTop: '1px dashed #000', margin: '6px 0' }} />
+          {/* Preview */}
+          <div id="receipt" className="p-4 font-mono text-xs" style={{ width: '70mm', minHeight: '100mm' }}>
+            {/* Header */}
+            <div className="text-center border-b border-dashed border-gray-400 pb-2 mb-2">
+              <p className="font-bold text-sm">LOONARS SKINCARE</p>
+              <p className="text-xs">loonarsbeauty.haluoleo.id</p>
+            </div>
 
-        <div style={{ marginBottom: '8px' }}>
-          <div><strong>Penerima:</strong> {order.customer_name}</div>
-          {order.customer_phone && <div><strong>HP:</strong> {order.customer_phone}</div>}
-          {order.shipping_address && <div><strong>Alamat:</strong> {order.shipping_address}</div>}
-          {order.shipping_city && <div>{order.shipping_city}{order.shipping_province ? `, ${order.shipping_province}` : ''}</div>}
-          {order.courier && <div><strong>Kurir:</strong> {order.courier} {order.courier_service}</div>}
-        </div>
+            {/* Info Order */}
+            <div className="mb-2 text-xs space-y-0.5">
+              <p>No    : {order?.order_number}</p>
+              <p>Tgl   : {formatDate(order?.created_at)}</p>
+              <p>Kurir : {order?.courier || '-'}</p>
+            </div>
 
-        <div style={{ borderTop: '1px dashed #000', margin: '6px 0' }} />
+            {/* Info Pembeli */}
+            <div className="border-t border-dashed border-gray-400 pt-2 mb-2 text-xs space-y-0.5">
+              <p className="font-bold">PEMBELI:</p>
+              <p>{order?.customer_name}</p>
+              <p>{order?.customer_phone}</p>
+              {order?.shipping_address && <p>{order?.shipping_address}</p>}
+            </div>
 
-        <div style={{ marginBottom: '8px' }}>
-          {(items || []).map((item, i) => (
-            <div key={i}>
-              <div style={{ fontWeight: 'bold' }}>{item.product_name}</div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>{item.quantity} x {formatRupiah(item.unit_price)}</span>
-                <span>{formatRupiah(item.subtotal)}</span>
+            {/* Produk */}
+            <div className="border-t border-dashed border-gray-400 pt-2 mb-2 text-xs">
+              <p className="font-bold mb-1">PRODUK:</p>
+              {items?.map((item, i) => (
+                <div key={i} className="flex justify-between">
+                  <span>{item.product_name || 'Produk'} x{item.quantity || item.qty}</span>
+                  <span>{formatRupiah(item.subtotal)}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Total */}
+            <div className="border-t border-dashed border-gray-400 pt-2 text-xs">
+              <div className="flex justify-between font-bold">
+                <span>TOTAL</span>
+                <span>{formatRupiah(order?.total)}</span>
               </div>
             </div>
-          ))}
-        </div>
 
-        <div style={{ borderTop: '1px dashed #000', margin: '6px 0' }} />
-
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span>Subtotal</span><span>{formatRupiah(order.subtotal)}</span>
-          </div>
-          {Number(order.discount) > 0 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span>Diskon</span><span>-{formatRupiah(order.discount)}</span>
+            {/* Footer */}
+            <div className="text-center mt-3 text-xs border-t border-dashed border-gray-400 pt-2">
+              <p>Terima kasih sudah berbelanja!</p>
+              <p>Loonars Skincare 🌿</p>
             </div>
-          )}
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span>Ongkir</span><span>{formatRupiah(order.shipping_cost)}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '13px', marginTop: '4px' }}>
-            <span>TOTAL</span><span>{formatRupiah(order.total)}</span>
-          </div>
-        </div>
 
-        <div style={{ borderTop: '1px dashed #000', margin: '8px 0', textAlign: 'center', fontSize: '10px' }}>
-          <div>Terima kasih telah berbelanja di Loonars Skincare!</div>
-          <div>Produk premium untuk kulit bercahaya ✨</div>
+          {/* Tombol */}
+          <div className="flex justify-end gap-3 p-4 border-t border-gray-100 no-print">
+            <button onClick={onClose} className="btn-secondary">Tutup</button>
+            <button onClick={handlePrint} className="btn-primary">🖨️ Print</button>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
