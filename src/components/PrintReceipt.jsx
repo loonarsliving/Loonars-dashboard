@@ -1,24 +1,22 @@
-import{useRef}from 'react'
 import{formatDate}from '../lib/utils'
 
 export function triggerPrint(){window.print()}
 
+export function savePDF(){
+const opt={
+margin:0,
+filename:'resi-loonars.pdf',
+image:{type:'jpeg',quality:0.98},
+html2canvas:{scale:3},
+jsPDF:{unit:'mm',format:[70,100],orientation:'portrait'}
+}
+import('https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js').then(m=>{
+const html2pdf=m.default||m
+html2pdf().set(opt).from(document.getElementById('resi')).save()
+})
+}
+
 export default function PrintReceipt({order,items,onClose}){
-const resiRef=useRef(null)
-
-async function saveAsImage(){
-try{
-const html2canvas=(await import('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.esm.js')).default
-const canvas=await html2canvas(resiRef.current,{scale:3,backgroundColor:'#ffffff',useCORS:true})
-const link=document.createElement('a')
-link.download=`resi-${order?.order_number||'loonars'}.png`
-link.href=canvas.toDataURL('image/png')
-link.click()
-}catch(e){
-alert('Gagal simpan gambar. Coba screenshot manual.')
-}
-}
-
 return(
 <>
 <style>{`@page{size:70mm 100mm;margin:0}@media print{body *{visibility:hidden}#resi,#resi *{visibility:visible}#resi{position:fixed;top:0;left:0;width:70mm;height:100mm;padding:3mm;font-family:Arial,sans-serif;font-size:8pt;overflow:hidden}.no-print{display:none!important}}`}</style>
@@ -28,14 +26,14 @@ return(
 <h2 className="font-bold text-gray-900 text-sm">Preview Label Resi</h2>
 <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100 no-print">✕</button>
 </div>
-<div ref={resiRef} id="resi" className="p-3 text-xs bg-white" style={{width:'70mm',minHeight:'100mm',border:'1px solid #000'}}>
+<div id="resi" className="p-3 text-xs bg-white" style={{width:'70mm',minHeight:'100mm',border:'1px solid #000'}}>
 <div className="border-b-2 border-black pb-2 mb-2">
 <p className="font-bold text-sm">LOONARS SKINCARE</p>
 <p>loonarsbeauty.haluoleo.id</p>
 </div>
 <div className="border-b border-black pb-1 mb-1 flex justify-between">
 <span className="font-bold">{order?.courier||'Kurir'}</span>
-<span className="font-bold">{order?.courier_service||''}</span>
+<span>{order?.courier_service||''}</span>
 </div>
 {order?.tracking_number&&(
 <div className="border-b border-black pb-1 mb-2 text-center">
@@ -64,7 +62,7 @@ return(
 </div>
 <div className="flex justify-end gap-2 p-4 border-t border-gray-100 no-print flex-wrap">
 <button onClick={onClose} className="btn-secondary text-sm">Tutup</button>
-<button onClick={saveAsImage} className="btn-secondary text-sm">💾 Simpan Gambar</button>
+<button onClick={savePDF} className="btn-secondary text-sm">📄 Simpan PDF</button>
 <button onClick={triggerPrint} className="btn-primary text-sm">🖨️ Print</button>
 </div>
 </div>
