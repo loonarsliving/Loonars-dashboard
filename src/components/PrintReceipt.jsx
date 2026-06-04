@@ -44,7 +44,7 @@ doc.text('LOONARS SKINCARE',W/2,y,{align:'center'})
 y+=5
 doc.setFontSize(7)
 doc.setFont('helvetica','normal')
-doc.text('loonarsbeauty.haluoleo.id',W/2,y,{align:'center'})
+doc.text('haluoleo.id',W/2,y,{align:'center'})
 y+=3
 doc.setLineWidth(0.5)
 doc.line(x,y,x+w,y)
