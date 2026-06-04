@@ -4,80 +4,67 @@ import toast from 'react-hot-toast'
 
 export function triggerPrint(){window.print()}
 
-const NEXT_STATUS={pending:'processing',processing:'packing',packing:'shipped',shipped:'done'}
-const NEXT_LABEL={pending:'Diproses',processing:'Dikemas',packing:'Dikirim',shipped:'Selesai'}
+const NEXT={pending:'processing',processing:'packing',packing:'shipped',shipped:'done'}
+const LABEL={pending:'Diproses',processing:'Dikemas',packing:'Dikirim',shipped:'Selesai'}
 
 export default function PrintReceipt({order,items,onClose,onStatusUpdated}){
 
-async function handleSavePDF(){
-window.print()
-// Auto update status setelah print
-if(order?.id && NEXT_STATUS[order?.status]){
-const nextStatus=NEXT_STATUS[order.status]
-const{error}=await supabase.from('orders').update({status:nextStatus}).eq('id',order.id)
+async function handlePrint(){
+if(order?.id&&NEXT[order?.status]){
+const{error}=await supabase.from('orders').update({status:NEXT[order.status]}).eq('id',order.id)
 if(!error){
-toast.success('Status diupdate ke: '+NEXT_LABEL[order.status])
-if(onStatusUpdated)onStatusUpdated(nextStatus)
+toast.success('Status diupdate: '+LABEL[order.status])
+if(onStatusUpdated)onStatusUpdated(NEXT[order.status])
 }
 }
+window.print()
 }
 
 return(
 <>
-<style>{`
-@page{size:70mm 100mm;margin:0}
-@media print{
-body *{visibility:hidden}
-#resi,#resi *{visibility:visible}
-#resi{position:fixed;top:0;left:0;width:70mm;height:100mm;padding:3mm;font-family:Arial,sans-serif;font-size:8pt;background:white}
-.no-print{display:none!important}}
-`}</style>
-<div className="modal-overlay no-print" style={{zIndex:9999}} onClick={e=>e.target===e.currentTarget&&onClose()}>
-<div className="modal w-full max-w-xs">
-<div className="flex items-center justify-between p-4 border-b border-gray-100">
-<h2 className="font-bold text-gray-900 text-sm">Preview Label Resi</h2>
-<button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100">✕</button>
+<style>{`@page{size:70mm 100mm;margin:0}@media print{body *{visibility:hidden}#resi,#resi *{visibility:visible}#resi{position:fixed;top:0;left:0;width:70mm;height:100mm;padding:3mm;font-family:Arial,sans-serif;font-size:8pt;background:white}}`}</style>
+<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.5)',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center'}}>
+<div style={{background:'white',borderRadius:16,width:'100%',maxWidth:320,margin:'0 16px'}}>
+<div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'16px',borderBottom:'1px solid #f3f4f6'}}>
+<span style={{fontWeight:'bold',fontSize:14}}>Preview Label Resi</span>
+<button onClick={onClose} style={{padding:'8px',borderRadius:8,border:'none',background:'#f3f4f6',cursor:'pointer',fontSize:16}}>✕</button>
 </div>
-<div id="resi" className="p-3 text-xs bg-white" style={{width:'70mm',minHeight:'100mm',border:'1px solid #000'}}>
-<div className="border-b-2 border-black pb-2 mb-2">
-<p className="font-bold text-sm">LOONARS SKINCARE</p>
-<p>loonarsbeauty.haluoleo.id</p>
+<div id="resi" style={{margin:'12px',padding:'8px',border:'1px solid black',fontFamily:'Arial,sans-serif',fontSize:'8pt',minHeight:'100mm',width:'70mm'}}>
+<div style={{borderBottom:'2px solid black',paddingBottom:6,marginBottom:6}}>
+<p style={{fontWeight:'bold',fontSize:12,margin:0}}>LOONARS SKINCARE</p>
+<p style={{margin:0,fontSize:9}}>loonarsbeauty.haluoleo.id</p>
 </div>
-<div className="border-b border-black pb-1 mb-1 flex justify-between">
-<span className="font-bold">{order?.courier||'Kurir'}</span>
+<div style={{borderBottom:'1px solid black',paddingBottom:4,marginBottom:4,display:'flex',justifyContent:'space-between'}}>
+<span style={{fontWeight:'bold'}}>{order?.courier||'Kurir'}</span>
 <span>{order?.courier_service||''}</span>
 </div>
 {order?.tracking_number&&(
-<div className="border-b border-black pb-1 mb-2 text-center">
-<p className="text-xs text-gray-500">No. Resi</p>
-<p className="font-bold text-sm">{order.tracking_number}</p>
+<div style={{borderBottom:'1px solid black',paddingBottom:4,marginBottom:8,textAlign:'center'}}>
+<p style={{margin:0,fontSize:8,color:'#666'}}>No. Resi</p>
+<p style={{margin:0,fontWeight:'bold',fontSize:12}}>{order.tracking_number}</p>
 </div>
 )}
-<div className="border border-black p-1.5 mb-2 rounded">
-<p className="text-xs font-bold mb-1">PENERIMA:</p>
-<p className="font-bold text-sm">{order?.customer_name}</p>
-<p className="font-bold">{order?.customer_phone}</p>
-<p className="mt-1 leading-tight">{order?.shipping_address||order?.notes||'-'}</p>
+<div style={{border:'1px solid black',padding:6,marginBottom:8,borderRadius:4}}>
+<p style={{margin:'0 0 4px',fontWeight:'bold',fontSize:8}}>PENERIMA:</p>
+<p style={{margin:0,fontWeight:'bold',fontSize:12}}>{order?.customer_name}</p>
+<p style={{margin:0,fontWeight:'bold'}}>{order?.customer_phone}</p>
+<p style={{margin:'4px 0 0',lineHeight:1.4}}>{order?.shipping_address||order?.notes||'-'}</p>
 </div>
-<div className="border-t border-dashed border-gray-400 pt-1 mb-1">
-<p className="text-xs font-bold">ISI PAKET:</p>
-{items?.map((item,i)=>(
-<p key={i}>{item.product_name||'Produk'} x{item.quantity||item.qty||1}</p>
-))}
+<div style={{borderTop:'1px dashed #999',paddingTop:4,marginBottom:4}}>
+<p style={{margin:'0 0 2px',fontWeight:'bold',fontSize:8}}>ISI PAKET:</p>
+{items?.map((item,i)=>(<p key={i} style={{margin:0}}>{item.product_name||'Produk'} x{item.quantity||item.qty||1}</p>))}
 </div>
-<div className="border-t border-dashed border-gray-400 pt-1">
-<p className="text-xs">{order?.order_number} · {formatDate(order?.created_at)}</p>
-</div>
-<div className="text-center mt-1 text-xs">
-<p>Terima kasih! 🌿</p>
+<div style={{borderTop:'1px dashed #999',paddingTop:4,textAlign:'center'}}>
+<p style={{margin:0,fontSize:8}}>{order?.order_number} · {formatDate(order?.created_at)}</p>
+<p style={{margin:'4px 0 0'}}>Terima kasih! 🌿</p>
 </div>
 </div>
-<div className="bg-blue-50 mx-4 p-2 rounded-lg text-xs text-blue-700 no-print">
+<div style={{background:'#eff6ff',margin:'0 12px 12px',padding:8,borderRadius:8,fontSize:11,color:'#1d4ed8'}}>
 💡 Tap "Simpan PDF" → cubit preview ke atas → Save to Files → buka di Printer Label
 </div>
-<div className="flex justify-end gap-2 p-4 border-t border-gray-100 no-print">
-<button onClick={onClose} className="btn-secondary text-sm">✕ Tutup</button>
-<button onClick={handleSavePDF} className="btn-primary text-sm">📄 Simpan PDF</button>
+<div style={{display:'flex',justifyContent:'flex-end',gap:8,padding:16,borderTop:'1px solid #f3f4f6'}}>
+<button onClick={onClose} style={{padding:'8px 16px',borderRadius:8,border:'1px solid #e5e7eb',background:'white',cursor:'pointer'}}>Tutup</button>
+<button onClick={handlePrint} style={{padding:'8px 16px',borderRadius:8,border:'none',background:'#d4296c',color:'white',cursor:'pointer',fontWeight:'bold'}}>📄 Simpan PDF</button>
 </div>
 </div>
 </div>
