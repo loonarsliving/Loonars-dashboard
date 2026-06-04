@@ -1,7 +1,8 @@
 import{formatRupiah,formatDate}from '../lib/utils'
 
+export function triggerPrint(){window.print()}
+
 export default function PrintReceipt({order,items,onClose}){
-function handlePrint(){window.print()}
 return(
 <>
 <style>{`@media print{body *{visibility:hidden}#resi,#resi *{visibility:visible}#resi{position:fixed;top:0;left:0;width:70mm;padding:4mm;font-family:monospace;font-size:9pt}.no-print{display:none!important}}`}</style>
@@ -48,7 +49,7 @@ return(
 </div>
 <div className="flex justify-end gap-3 p-4 border-t border-gray-100 no-print">
 <button onClick={onClose} className="btn-secondary">Tutup</button>
-<button onClick={handlePrint} className="btn-primary">Print Resi</button>
+<button onClick={triggerPrint} className="btn-primary">Print Resi</button>
 </div>
 </div>
 </div>
