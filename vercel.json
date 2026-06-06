@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/api/ginee", "destination": "/api/ginee.js" },
+    { "source": "/", "destination": "/index.html" }
+  ]
+}
