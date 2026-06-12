@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, ShoppingCart, Package, Users, BarChart3,
-  Settings, LogOut, Bell, UserCog, ChevronDown, Menu, X
+  Settings, LogOut, Bell, UserCog, ChevronDown, Menu, X, Sparkles
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
@@ -15,6 +15,7 @@ const NAV = [
   { to: '/owner/customers', icon: Users, label: 'Pelanggan' },
   { to: '/owner/reports', icon: BarChart3, label: 'Laporan' },
   { to: '/owner/users', icon: UserCog, label: 'Manajemen Tim' },
+  { to: '/owner/beauty-orders', icon: Sparkles, label: 'Beauty Orders' },
   { to: '/owner/settings', icon: Settings, label: 'Pengaturan' },
 ]
 
