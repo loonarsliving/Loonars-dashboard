@@ -12,6 +12,7 @@ import OwnerCustomers from './pages/owner/Customers'
 import OwnerReports from './pages/owner/Reports'
 import OwnerSettings from './pages/owner/Settings'
 import OwnerUsers from './pages/owner/Users'
+import BeautyOrders from './pages/owner/BeautyOrders'
 
 // Admin pages
 import AdminDashboard from './pages/admin/Dashboard'
@@ -66,6 +67,7 @@ export default function App() {
         <Route path="reports" element={<OwnerReports />} />
         <Route path="settings" element={<OwnerSettings />} />
         <Route path="users" element={<OwnerUsers />} />
+        <Route path="beauty-orders" element={<BeautyOrders />} />
       </Route>
 
       {/* Admin Routes */}
